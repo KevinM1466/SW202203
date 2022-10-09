@@ -1,45 +1,46 @@
-import { ICashFlow, CashFlow } from '@libs/CashFlow';
 import { Router } from 'express';
+import { ICashFlow, CashFlow } from '@libs/CashFlow';
+
 const router = Router();
 const cashFlowInstance = new CashFlow();
 
-router.get('/', (_req, res) => {
-    res.json(cashFlowInstance.getAllCashFlow());
-});
-
-router.get('/byIndex/:index', (req, res) => {
+router.get('/', async (_req, res) => {
     try {
-        const { index = -1 } = req.params as unknown as { index: number };
-        res.json(cashFlowInstance.getCashFlowByIndex(index));
-    } catch (error) {
-        console.log('🔥: error', error)
-        res.status(500).json({ 'msg': 'Error al obtener el registro' });
+        res.json(await cashFlowInstance.getAllCashFlow());
+    } catch (ex) {
+        console.error(ex);
+        res.status(503).json({ error: ex });
     }
 });
 
-router.post('/new', (req, res) => {
+router.get('/byindex/:index', async (req, res) => {
+    try {
+        const { index } = req.params;
+        res.json(await cashFlowInstance.getCashFlowByIndex(+index));
+    } catch (error) {
+        console.log("Error", error);
+        res.status(500).json({ 'msg': 'Error al obtener Registro' });
+    }
+});
+
+router.post('/new', async (req, res) => {
     try {
         const newCashFlow = req.body as unknown as ICashFlow;
-        const newCashFlowIndex = cashFlowInstance.addCashFlow(newCashFlow);
+        //VALIDATE
+
+        const newCashFlowIndex = await cashFlowInstance.addCashFlow(newCashFlow);
         res.json({ newIndex: newCashFlowIndex });
     } catch (error) {
         res.status(500).json({ error: (error as Error).message });
     }
 });
 
-router.put('/update/:index', (req, res) => {
+router.put('/update/:index', async (req, res) => {
     try {
-        const { index = -1 } = req.params as unknown as { index?: number };
+        const { index } = req.params;
         const cashFlowFromForm = req.body as ICashFlow;
-        const cashFlowUpdated = Object.assign(
-            cashFlowInstance.getCashFlowByIndex(index), cashFlowFromForm
-        );
-        // const cashFlowUpdated = { ...cashFlowInstance.getCashFlowByIndex(index), ...cashFlowFromForm };
-        if (cashFlowInstance.updateCashFlow(index, cashFlowUpdated)) {
-            res.json(cashFlowUpdated);
-        } else {
-            res.status(404).json({ 'msg': 'Update not possible' });
-        }
+        await cashFlowInstance.updateCashFlow(+index, cashFlowFromForm);
+        res.status(200).json({ "msg": "Registro Actualizado" });
     } catch (error) {
         res.status(500).json({ error: (error as Error).message });
     }
@@ -47,16 +48,17 @@ router.put('/update/:index', (req, res) => {
 
 router.delete('/delete/:index', (req, res) => {
     try {
-        const { index = -1 } = req.params as unknown as { index: number };
-        if (cashFlowInstance.deleteCashFlow(index)) {
-            res.status(200).json({ 'msg': 'Registro eliminado' });
+        const { index } = req.params;
+        if (cashFlowInstance.deleteCashFlow(+index)) {
+            res.status(200).json({ "msg": "Registro Eliminado" });
         } else {
-            res.status(404).json({ 'msg': 'Registro no encontrado' });
+            res.status(500).json({ 'msg': 'Error al eliminar Registro' });
         }
     } catch (error) {
-        console.log('🔥: error', error)
-        res.status(500).json({ 'msg': 'Error al eliminar el registro' });
+        console.log("Error", error);
+        res.status(500).json({ 'msg': 'Error al eliminar Registro' });
     }
 });
+
 
 export default router;
