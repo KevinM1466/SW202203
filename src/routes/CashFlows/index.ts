@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { ICashFlow, CashFlow } from '@libs/CashFlow';
+import { commonValidator, validateInput } from '@server/utils/validator';
 
 const router = Router();
 const cashFlowInstance = new CashFlow();
@@ -22,6 +23,18 @@ router.get('/byindex/:index', async (req, res) => {
         res.status(500).json({ 'msg': 'Error al obtener Registro' });
     }
 });
+
+router.post('/testvalidator', async (req, res) => {
+    const { email } = req.body;
+    const validateEmailSchema = commonValidator.email;
+    validateEmailSchema.param = "email";
+    validateEmailSchema.required = true;
+    const errors = validateInput({ email }, [validateEmailSchema]);
+    if (errors.length > 0) {
+        return res.status(400).json(errors);
+    }
+    return res.json({ email });
+})
 
 router.post('/new', async (req, res) => {
     try {
